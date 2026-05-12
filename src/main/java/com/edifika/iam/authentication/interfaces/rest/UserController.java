@@ -10,6 +10,9 @@ import com.edifika.iam.authentication.interfaces.rest.resources.UserResource;
 import com.edifika.iam.authentication.interfaces.rest.transform.UpdateUserCommandFromResourceAssembler;
 import com.edifika.iam.authentication.interfaces.rest.transform.UserResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -19,10 +22,11 @@ import java.util.List;
  * Permite listar, obtener, actualizar y eliminar usuarios.
  */
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping(value = "/api/v1/users", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Users", description = "Endpoints de gestión de usuarios")
 public class UserController {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserController.class);
     private final UserQueryService userQueryService;
     private final UserCommandService userCommandService;
 
@@ -34,6 +38,7 @@ public class UserController {
     @GetMapping
     public ResponseEntity<List<UserResource>> getAllUsers() {
         var users = userQueryService.handle(new GetAllUsersQuery());
+        LOGGER.info("Consultando todos los usuarios, total: {}", users.size());
         var resources = users.stream()
                 .map(UserResourceFromEntityAssembler::toResourceFromEntity)
                 .toList();
@@ -43,22 +48,41 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<UserResource> getUserById(@PathVariable Long id) {
         var user = userQueryService.handle(new GetUserByIdQuery(id));
-        if (user.isEmpty()) return ResponseEntity.notFound().build();
+        if (user.isEmpty()) {
+            LOGGER.warn("Usuario no encontrado con ID: {}", id);
+            return ResponseEntity.notFound().build();
+        }
+        LOGGER.info("Usuario encontrado con ID: {}", id);
         return ResponseEntity.ok(UserResourceFromEntityAssembler.toResourceFromEntity(user.get()));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<UserResource> updateUser(@PathVariable Long id,
                                                    @RequestBody UpdateUserResource resource) {
-        var command = UpdateUserCommandFromResourceAssembler.toCommandFromResource(resource);
-        var user = userCommandService.handle(command, id);
-        if (user.isEmpty()) return ResponseEntity.badRequest().build();
-        return ResponseEntity.ok(UserResourceFromEntityAssembler.toResourceFromEntity(user.get()));
+        try {
+            var command = UpdateUserCommandFromResourceAssembler.toCommandFromResource(resource);
+            var user = userCommandService.handle(command, id);
+            if (user.isEmpty()) {
+                LOGGER.warn("No se pudo actualizar el usuario con ID: {}", id);
+                return ResponseEntity.badRequest().build();
+            }
+            LOGGER.info("Usuario actualizado exitosamente con ID: {}", id);
+            return ResponseEntity.ok(UserResourceFromEntityAssembler.toResourceFromEntity(user.get()));
+        } catch (Exception e) {
+            LOGGER.error("Error al actualizar usuario con ID {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userCommandService.handle(new DeleteUserCommand(id));
-        return ResponseEntity.noContent().build();
+        try {
+            userCommandService.handle(new DeleteUserCommand(id));
+            LOGGER.info("Usuario eliminado exitosamente con ID: {}", id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            LOGGER.error("Error al eliminar usuario con ID {}: {}", id, e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
     }
 }
