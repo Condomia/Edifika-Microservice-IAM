@@ -22,28 +22,29 @@ public class OpenApiConfiguration {
     private String serverPort;
 
     @Bean
-    public OpenAPI learninfPlatformOpenApi() {
-    // General configuration
+    public OpenAPI edifikaPlatformOpenApi() {
+
+        // General configuration
         var openApi = new OpenAPI();
+
         openApi
                 .info(new Info()
-                        .title("APX LearnHive API")
-                        .description("Backend API for APX LearnHive educational platform - Innovative learning solutions powered by APX Startup")
+                        .title("Edifika API")
+                        .description("Backend API for Edifika - A smart building and condominium management platform developed by Condomia Startup")
                         .version("1.0.0")
                         .contact(new Contact()
-                                .name("APX Development Team")
-                                .email("dev@apxlearnhive.com")
-                                .url("https://apxlearnhive.com"))
+                                .name("Condomia Development Team")
+                                .email("dev@edifika.com")
+                                .url("https://edifika.com"))
                         .license(new License()
                                 .name("Apache 2.0")
                                 .url("https://www.apache.org/licenses/LICENSE-2.0")))
                 .externalDocs(new ExternalDocumentation()
-                        .description("APX LearnHive Platform Documentation")
-                        .url("https://docs.apxlearnhive.com"))
+                        .description("Edifika Platform Documentation")
+                        .url("https://docs.edifika.com"))
                 .servers(List.of(
                         new Server()
-                                .url("https://backend-web-services-microservices-iam.onrender.com")
-
+                                .url("https://desplegado")
                 ));
 
         // Add security scheme
