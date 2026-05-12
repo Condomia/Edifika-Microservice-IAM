@@ -44,7 +44,8 @@ public class OpenApiConfiguration {
                         .url("https://docs.edifika.com"))
                 .servers(List.of(
                         new Server()
-                                .url("https://desplegado")
+                                .url("http://localhost:" + serverPort)
+                                .description("Servidor local de desarrollo")
                 ));
 
         // Add security scheme
