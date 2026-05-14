@@ -47,8 +47,7 @@ public class User extends AuditableAbstractAggregateRoot<User> {
         addRoles(roles);
     }
 
-    public void activate() { this.status = "ACTIVE"; }
-    public void deactivate() { this.status = "INACTIVE"; }
+
     public void changePassword(String newPassword) { this.passwordHash = newPassword; }
 
     public void addRoles(List<Role> roles) {
@@ -58,4 +57,22 @@ public class User extends AuditableAbstractAggregateRoot<User> {
     public boolean hasRole(Roles role) {
         return this.roles.stream().anyMatch(r -> r.getName() == role);
     }
+
+    public void updateFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public void updateEmail(String email) {
+        this.email = email;
+    }
+
+    public void updatePhone(String phone) {
+        this.phone = phone;
+    }
+
+    // activar usuario - residential management
+    public void activate() { this.status = "ACTIVE"; }
+    // desactivar usuario moroso - residential management
+    public void deactivate() { this.status = "INACTIVE"; }
+
 }

@@ -33,41 +33,47 @@ public class AuthenticationController {
         this.userCommandService = userCommandService;
     }
 
+    @PostMapping("/sign-up")
+    public ResponseEntity<?> signUp(@RequestBody SignUpResource resource) {
+        try {
+            var command = SignUpCommandFromResourceAssembler.toCommandFromResource(resource);
+            var user = userCommandService.handle(command);
+            if (user.isEmpty()) {
+                LOGGER.warn("Sign up fallido para el email: {}", resource.email());
+                return ResponseEntity.badRequest().body("No se pudo registrar el usuario");
+            }
+            LOGGER.info("Usuario registrado exitosamente: {}", resource.email());
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(UserResourceFromEntityAssembler.toResourceFromEntity(user.get()));
+        } catch (IllegalArgumentException e) {
+            LOGGER.error("Validacion fallida en sign up: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            LOGGER.error("Error en sign up para el email {}: {}", resource.email(), e.getMessage());
+            return ResponseEntity.badRequest().body("Error al registrar el usuario");
+        }
+    }
+
     @PostMapping("/sign-in")
-    public ResponseEntity<AuthenticatedUserResource> signIn(@RequestBody SignInResource resource) {
+    public ResponseEntity<?> signIn(@RequestBody SignInResource resource) {
         try {
             var command = SignInCommandFromResourceAssembler.toCommandFromResource(resource);
             var result = userCommandService.handle(command);
             if (result.isEmpty()) {
                 LOGGER.warn("Sign in fallido para el email: {}", resource.email());
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales incorrectas");
             }
             var user = result.get().getLeft();
             var token = result.get().getRight();
             LOGGER.info("Sign in exitoso para el email: {}", resource.email());
             return ResponseEntity.ok(
                     AuthenticatedUserResourceFromEntityAssembler.toResourceFromEntity(user, token));
+        } catch (IllegalArgumentException e) {
+            LOGGER.error("Validacion fallida en sign in: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Error en sign in para el email {}: {}", resource.email(), e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-    }
-
-    @PostMapping("/sign-up")
-    public ResponseEntity<UserResource> signUp(@RequestBody SignUpResource resource) {
-        try {
-            var command = SignUpCommandFromResourceAssembler.toCommandFromResource(resource);
-            var user = userCommandService.handle(command);
-            if (user.isEmpty()) {
-                LOGGER.warn("Sign up fallido para el email: {}", resource.email());
-                return ResponseEntity.badRequest().build();
-            }
-            LOGGER.info("Usuario registrado exitosamente: {}", resource.email());
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(UserResourceFromEntityAssembler.toResourceFromEntity(user.get()));
-        } catch (Exception e) {
-            LOGGER.error("Error en sign up para el email {}: {}", resource.email(), e.getMessage());
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales incorrectas");
         }
     }
 }
