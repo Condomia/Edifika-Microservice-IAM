@@ -57,10 +57,16 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserResource> updateUser(@PathVariable Long id,
-                                                   @RequestBody UpdateUserResource resource) {
+    public ResponseEntity<?> updateUser(@PathVariable Long id,
+                                        @RequestBody UpdateUserResource resource) {
         try {
-            var command = UpdateUserCommandFromResourceAssembler.toCommandFromResource(resource);
+            var currentUser = userQueryService.handle(new GetUserByIdQuery(id));
+            if (currentUser.isEmpty()) {
+                LOGGER.warn("Usuario no encontrado con ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+            var command = UpdateUserCommandFromResourceAssembler
+                    .toCommandFromResource(resource, currentUser.get());
             var user = userCommandService.handle(command, id);
             if (user.isEmpty()) {
                 LOGGER.warn("No se pudo actualizar el usuario con ID: {}", id);
@@ -68,9 +74,12 @@ public class UserController {
             }
             LOGGER.info("Usuario actualizado exitosamente con ID: {}", id);
             return ResponseEntity.ok(UserResourceFromEntityAssembler.toResourceFromEntity(user.get()));
+        } catch (IllegalArgumentException e) {
+            LOGGER.error("Validacion fallida al actualizar usuario {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Error al actualizar usuario con ID {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body("Error al actualizar el usuario");
         }
     }
 

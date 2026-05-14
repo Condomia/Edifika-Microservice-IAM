@@ -7,6 +7,7 @@ import com.edifika.iam.authentication.domain.model.aggregates.User;
 import com.edifika.iam.authentication.domain.model.commands.*;
 
 
+import com.edifika.iam.authentication.domain.model.valueobjects.Roles;
 import com.edifika.iam.authentication.domain.services.UserCommandService;
 import com.edifika.iam.authentication.infrastructure.persistence.jpa.repositories.RoleRepository;
 import com.edifika.iam.authentication.infrastructure.persistence.jpa.repositories.UserRepository;
@@ -59,30 +60,53 @@ public class UserCommandServiceImpl implements UserCommandService {
     public Optional<User> handle(SignUpCommand signUpCommand) {
         if (userRepository.existsByEmail(signUpCommand.email()))
             throw new IllegalArgumentException("El email " + signUpCommand.email() + " ya está registrado");
+
+        // IMPORTANTE: solo se puede registrar con rol ADMIN en este microservicio
+        boolean hasNonAdminRole = signUpCommand.roles().stream()
+                .anyMatch(r -> r.getName() != Roles.ADMIN);
+        if (hasNonAdminRole)
+            throw new IllegalArgumentException("En este sistema solo se pueden registrar administradores");
+
         var roles = signUpCommand.roles().stream().map(
                 role -> roleRepository.findByName(role.getName())
-                        .orElseThrow(() -> new IllegalArgumentException("Rol no encontrado"))
+                        .orElseThrow(() -> new IllegalArgumentException("Rol no encontrado: " + role.getName()))
         ).toList();
-        var user = new User(signUpCommand.fullName(),
+
+        var user = new User(
+                signUpCommand.fullName(),
                 signUpCommand.email(),
                 hashingService.encode(signUpCommand.password()),
                 signUpCommand.phone(),
-                roles);
+                roles
+        );
         userRepository.save(user);
         return userRepository.findByEmail(signUpCommand.email());
     }
 
     @Override
     public Optional<User> handle(UpdateUserCommand updateUserCommand, Long userId) {
-        var userToUpdate = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario con ID " + userId + " no encontrado"));
+        var userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty())
+            throw new IllegalArgumentException("Usuario con ID " + userId + " no encontrado");
 
-        String encodedPassword = updateUserCommand.password() != null
-                && !updateUserCommand.password().isBlank()
-                ? hashingService.encode(updateUserCommand.password())
-                : userToUpdate.getPasswordHash();
+        var userToUpdate = userOptional.get();
 
-        userToUpdate.changePassword(encodedPassword);
+        // Actualizar fullName
+        userToUpdate.updateFullName(updateUserCommand.fullName());
+
+        // Actualizar email
+        userToUpdate.updateEmail(updateUserCommand.email());
+
+        // Actualizar phone
+        if (updateUserCommand.phone() != null && !updateUserCommand.phone().isBlank())
+            userToUpdate.updatePhone(updateUserCommand.phone());
+
+        // Actualizar password solo si viene
+        if (updateUserCommand.password() != null && !updateUserCommand.password().isBlank()) {
+            String encodedPassword = hashingService.encode(updateUserCommand.password());
+            userToUpdate.changePassword(encodedPassword);
+        }
+
         try {
             return Optional.of(userRepository.save(userToUpdate));
         } catch (Exception e) {
