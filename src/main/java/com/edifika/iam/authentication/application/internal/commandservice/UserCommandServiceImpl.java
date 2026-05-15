@@ -51,8 +51,10 @@ public class UserCommandServiceImpl implements UserCommandService {
         var roles = authenticatedUser.getRoles().stream()
                 .map(role -> role.getStringName())
                 .collect(Collectors.toList());
-        var token = tokenService.generateToken(authenticatedUser.getEmail(),
-                authenticatedUser.getId(), roles);
+        var token = tokenService.generateToken(
+                authenticatedUser.getEmail(),
+                authenticatedUser.getId(),
+                roles);
         return Optional.of(ImmutablePair.of(authenticatedUser, token));
     }
 
@@ -61,7 +63,10 @@ public class UserCommandServiceImpl implements UserCommandService {
         if (userRepository.existsByEmail(signUpCommand.email()))
             throw new IllegalArgumentException("El email " + signUpCommand.email() + " ya está registrado");
 
-        // IMPORTANTE: solo se puede registrar con rol ADMIN en este microservicio
+        if (userRepository.existsByDocumentNumber(signUpCommand.documentNumber()))
+            throw new IllegalArgumentException("El número de documento " + signUpCommand.documentNumber() + " ya está registrado");
+
+        // Solo se puede registrar con rol ADMIN en este microservicio
         boolean hasNonAdminRole = signUpCommand.roles().stream()
                 .anyMatch(r -> r.getName() != Roles.ADMIN);
         if (hasNonAdminRole)
@@ -77,6 +82,8 @@ public class UserCommandServiceImpl implements UserCommandService {
                 signUpCommand.email(),
                 hashingService.encode(signUpCommand.password()),
                 signUpCommand.phone(),
+                signUpCommand.documentType(),
+                signUpCommand.documentNumber(),
                 roles
         );
         userRepository.save(user);
@@ -91,21 +98,20 @@ public class UserCommandServiceImpl implements UserCommandService {
 
         var userToUpdate = userOptional.get();
 
-        // Actualizar fullName
         userToUpdate.updateFullName(updateUserCommand.fullName());
-
-        // Actualizar email
         userToUpdate.updateEmail(updateUserCommand.email());
 
-        // Actualizar phone
         if (updateUserCommand.phone() != null && !updateUserCommand.phone().isBlank())
             userToUpdate.updatePhone(updateUserCommand.phone());
 
-        // Actualizar password solo si viene
-        if (updateUserCommand.password() != null && !updateUserCommand.password().isBlank()) {
-            String encodedPassword = hashingService.encode(updateUserCommand.password());
-            userToUpdate.changePassword(encodedPassword);
-        }
+        if (updateUserCommand.documentType() != null)
+            userToUpdate.updateDocumentType(updateUserCommand.documentType());
+
+        if (updateUserCommand.documentNumber() != null && !updateUserCommand.documentNumber().isBlank())
+            userToUpdate.updateDocumentNumber(updateUserCommand.documentNumber());
+
+        if (updateUserCommand.password() != null && !updateUserCommand.password().isBlank())
+            userToUpdate.changePassword(hashingService.encode(updateUserCommand.password()));
 
         try {
             return Optional.of(userRepository.save(userToUpdate));

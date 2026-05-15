@@ -1,23 +1,25 @@
 package com.edifika.iam.authentication.domain.model.commands;
 
 import com.edifika.iam.authentication.domain.model.entities.Role;
+import com.edifika.iam.authentication.domain.model.valueobjects.DocumentType;
 import com.edifika.iam.authentication.domain.model.valueobjects.Roles;
 
 import java.util.List;
 
 /**
  * Comando para registrar un nuevo usuario en Edifika.
- * Incluye validaciones de formato y seguridad para todos los campos.
  */
 public record SignUpCommand(
         String fullName,
         String email,
         String password,
         String phone,
+        DocumentType documentType,
+        String documentNumber,
         List<Role> roles
 ) {
     public SignUpCommand {
-        // Validar fullName
+        // fullName
         if (fullName == null || fullName.isBlank())
             throw new IllegalArgumentException("El nombre completo no puede estar vacío");
         if (fullName.trim().length() < 3)
@@ -25,15 +27,15 @@ public record SignUpCommand(
         if (!fullName.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$"))
             throw new IllegalArgumentException("El nombre solo puede contener letras y espacios");
 
-        // Validar email
+        // email
         if (email == null || email.isBlank())
             throw new IllegalArgumentException("El email no puede estar vacío");
         if (email.contains(" "))
             throw new IllegalArgumentException("El email no puede contener espacios");
         if (!email.matches("^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$"))
-            throw new IllegalArgumentException("El email debe tener un formato válido, por ejemplo: usuario@gmail.com");
+            throw new IllegalArgumentException("El email debe tener un formato válido");
 
-        // Validar password
+        // password
         if (password == null || password.isBlank())
             throw new IllegalArgumentException("La contraseña no puede estar vacía");
         if (password.length() < 8)
@@ -47,7 +49,7 @@ public record SignUpCommand(
         if (password.toLowerCase().contains(email.split("@")[0].toLowerCase()))
             throw new IllegalArgumentException("La contraseña no puede contener tu email");
 
-        // Validar phone
+        // phone
         if (phone == null || phone.isBlank())
             throw new IllegalArgumentException("El número de teléfono no puede estar vacío");
         phone = phone.replaceAll("[\\s\\-]", "");
@@ -64,7 +66,21 @@ public record SignUpCommand(
         if (!digits.startsWith("9"))
             throw new IllegalArgumentException("El número de teléfono peruano debe empezar con 9");
 
-        // Validar roles
+        // documentType
+        if (documentType == null)
+            throw new IllegalArgumentException("El tipo de documento no puede estar vacío");
+
+        // documentNumber
+        if (documentNumber == null || documentNumber.isBlank())
+            throw new IllegalArgumentException("El número de documento no puede estar vacío");
+        if (documentType == DocumentType.DNI && !documentNumber.matches("\\d{8}"))
+            throw new IllegalArgumentException("El DNI debe tener exactamente 8 dígitos");
+        if (documentType == DocumentType.CE && !documentNumber.matches("[a-zA-Z0-9]{9,12}"))
+            throw new IllegalArgumentException("El CE debe tener entre 9 y 12 caracteres alfanuméricos");
+        if (documentType == DocumentType.PASAPORTE && !documentNumber.matches("[a-zA-Z0-9]{6,12}"))
+            throw new IllegalArgumentException("El pasaporte debe tener entre 6 y 12 caracteres alfanuméricos");
+
+        // roles
         if (roles == null || roles.isEmpty())
             throw new IllegalArgumentException("Debe asignarse al menos un rol al usuario");
         boolean hasValidRole = roles.stream()

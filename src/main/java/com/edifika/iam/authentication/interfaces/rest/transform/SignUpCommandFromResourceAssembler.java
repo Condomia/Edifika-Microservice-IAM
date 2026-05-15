@@ -19,6 +19,8 @@ public class SignUpCommandFromResourceAssembler {
                 resource.email(),
                 resource.password(),
                 resource.phone(),
+                resource.documentType(),
+                resource.documentNumber(),
                 roles
         );
     }

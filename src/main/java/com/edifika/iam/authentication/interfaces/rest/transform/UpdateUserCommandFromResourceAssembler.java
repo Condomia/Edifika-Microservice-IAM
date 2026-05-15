@@ -6,7 +6,6 @@ import com.edifika.iam.authentication.interfaces.rest.resources.UpdateUserResour
 
 /**
  * Convierte un UpdateUserResource en un UpdateUserCommand.
- * Incluye el email y password actuales para validar cambios.
  */
 public class UpdateUserCommandFromResourceAssembler {
     public static UpdateUserCommand toCommandFromResource(UpdateUserResource resource, User currentUser) {
@@ -15,6 +14,8 @@ public class UpdateUserCommandFromResourceAssembler {
                 resource.email(),
                 resource.password(),
                 resource.phone(),
+                resource.documentType(),
+                resource.documentNumber(),
                 currentUser.getEmail(),
                 currentUser.getPasswordHash()
         );

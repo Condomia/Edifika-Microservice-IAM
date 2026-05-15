@@ -18,6 +18,8 @@ public class UserResourceFromEntityAssembler {
                 user.getEmail(),
                 user.getPhone(),
                 user.getStatus(),
+                user.getDocumentType(),
+                user.getDocumentNumber(),
                 roles
         );
     }

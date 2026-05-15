@@ -1,5 +1,7 @@
 package com.edifika.iam.authentication.interfaces.rest.resources;
 
+import com.edifika.iam.authentication.domain.model.valueobjects.DocumentType;
+
 import java.util.List;
 
 /**
@@ -11,5 +13,7 @@ public record UserResource(
         String email,
         String phone,
         String status,
+        DocumentType documentType,
+        String documentNumber,
         List<String> roles
 ) {}
