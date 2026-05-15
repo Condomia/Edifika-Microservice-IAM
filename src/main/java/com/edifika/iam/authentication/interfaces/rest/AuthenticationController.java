@@ -1,6 +1,7 @@
 package com.edifika.iam.authentication.interfaces.rest;
 
 import com.edifika.iam.authentication.domain.services.UserCommandService;
+import com.edifika.iam.authentication.infrastructure.persistence.jpa.repositories.RoleRepository;
 import com.edifika.iam.authentication.interfaces.rest.resources.AuthenticatedUserResource;
 import com.edifika.iam.authentication.interfaces.rest.resources.SignInResource;
 import com.edifika.iam.authentication.interfaces.rest.resources.SignUpResource;
@@ -28,15 +29,19 @@ public class AuthenticationController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationController.class);
     private final UserCommandService userCommandService;
+    private final RoleRepository roleRepository;
 
-    public AuthenticationController(UserCommandService userCommandService) {
+    public AuthenticationController(UserCommandService userCommandService,
+                                    RoleRepository roleRepository) {
         this.userCommandService = userCommandService;
+        this.roleRepository = roleRepository;
     }
 
     @PostMapping("/sign-up")
     public ResponseEntity<?> signUp(@RequestBody SignUpResource resource) {
         try {
-            var command = SignUpCommandFromResourceAssembler.toCommandFromResource(resource);
+            var command = SignUpCommandFromResourceAssembler
+                    .toCommandFromResource(resource, roleRepository);
             var user = userCommandService.handle(command);
             if (user.isEmpty()) {
                 LOGGER.warn("Sign up fallido para el email: {}", resource.email());
