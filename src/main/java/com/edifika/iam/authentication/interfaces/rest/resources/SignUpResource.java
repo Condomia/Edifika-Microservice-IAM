@@ -1,5 +1,7 @@
 package com.edifika.iam.authentication.interfaces.rest.resources;
 
+import com.edifika.iam.authentication.domain.model.valueobjects.DocumentType;
+
 import java.util.List;
 
 /**
@@ -10,5 +12,7 @@ public record SignUpResource(
         String email,
         String password,
         String phone,
+        DocumentType documentType,
+        String documentNumber,
         List<String> roles
 ) {}

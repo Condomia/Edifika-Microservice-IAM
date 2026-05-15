@@ -1,6 +1,7 @@
 package com.edifika.iam.authentication.domain.model.aggregates;
 
 import com.edifika.iam.authentication.domain.model.entities.Role;
+import com.edifika.iam.authentication.domain.model.valueobjects.DocumentType;
 import com.edifika.iam.authentication.domain.model.valueobjects.Roles;
 import com.edifika.iam.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import jakarta.persistence.*;
@@ -23,6 +24,11 @@ public class User extends AuditableAbstractAggregateRoot<User> {
     private String phone;
     private String status;
 
+    @Enumerated(EnumType.STRING)
+    private DocumentType documentType;
+
+    private String documentNumber;
+
     @ManyToMany(fetch = FetchType.EAGER,
             cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
@@ -37,18 +43,26 @@ public class User extends AuditableAbstractAggregateRoot<User> {
         this.roles = new HashSet<>();
     }
 
-    public User(String fullName, String email, String passwordHash, String phone, List<Role> roles) {
+    public User(String fullName, String email, String passwordHash,
+                String phone, DocumentType documentType,
+                String documentNumber, List<Role> roles) {
         this.fullName = fullName;
         this.email = email;
         this.passwordHash = passwordHash;
         this.phone = phone;
-        this.status = "ACTIVE";
+        this.documentType = documentType;
+        this.documentNumber = documentNumber;
         this.roles = new HashSet<>();
         addRoles(roles);
     }
 
 
     public void changePassword(String newPassword) { this.passwordHash = newPassword; }
+    public void updateFullName(String fullName) { this.fullName = fullName; }
+    public void updateEmail(String email) { this.email = email; }
+    public void updatePhone(String phone) { this.phone = phone; }
+    public void updateDocumentType(DocumentType documentType) { this.documentType = documentType; }
+    public void updateDocumentNumber(String documentNumber) { this.documentNumber = documentNumber; }
 
     public void addRoles(List<Role> roles) {
         this.roles.addAll(Role.validateRoleSet(roles));
@@ -56,18 +70,6 @@ public class User extends AuditableAbstractAggregateRoot<User> {
 
     public boolean hasRole(Roles role) {
         return this.roles.stream().anyMatch(r -> r.getName() == role);
-    }
-
-    public void updateFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public void updateEmail(String email) {
-        this.email = email;
-    }
-
-    public void updatePhone(String phone) {
-        this.phone = phone;
     }
 
     // activar usuario - residential management

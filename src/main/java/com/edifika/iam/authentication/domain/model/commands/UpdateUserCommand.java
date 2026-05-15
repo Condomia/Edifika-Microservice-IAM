@@ -1,22 +1,23 @@
 package com.edifika.iam.authentication.domain.model.commands;
 
+import com.edifika.iam.authentication.domain.model.valueobjects.DocumentType;
+
 /**
  * Comando para actualizar los datos de un usuario existente.
- * Valida que los nuevos datos sean diferentes a los actuales.
  */
 public record UpdateUserCommand(
         String fullName,
         String email,
         String password,
         String phone,
+        DocumentType documentType,
+        String documentNumber,
         String currentEmail,
         String currentPasswordHash
 ) {
     public UpdateUserCommand {
         if (fullName == null || fullName.isBlank())
             throw new IllegalArgumentException("El nombre completo no puede estar vacío");
-        if (fullName.trim().length() < 3)
-            throw new IllegalArgumentException("El nombre completo debe tener al menos 3 caracteres");
         if (!fullName.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$"))
             throw new IllegalArgumentException("El nombre solo puede contener letras y espacios");
 
@@ -57,5 +58,12 @@ public record UpdateUserCommand(
             if (!digits.startsWith("9"))
                 throw new IllegalArgumentException("El número de teléfono peruano debe empezar con 9");
         }
+
+        if (documentType != null && (documentNumber == null || documentNumber.isBlank()))
+            throw new IllegalArgumentException("El número de documento no puede estar vacío");
+        if (documentType == DocumentType.DNI && documentNumber != null && !documentNumber.matches("\\d{8}"))
+            throw new IllegalArgumentException("El DNI debe tener exactamente 8 dígitos");
+        if (documentType == DocumentType.CE && documentNumber != null && !documentNumber.matches("[a-zA-Z0-9]{9,12}"))
+            throw new IllegalArgumentException("El CE debe tener entre 9 y 12 caracteres alfanuméricos");
     }
 }
