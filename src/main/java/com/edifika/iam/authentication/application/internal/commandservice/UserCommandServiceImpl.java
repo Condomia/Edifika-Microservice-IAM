@@ -66,12 +66,6 @@ public class UserCommandServiceImpl implements UserCommandService {
         if (userRepository.existsByDocumentNumber(signUpCommand.documentNumber()))
             throw new IllegalArgumentException("El número de documento " + signUpCommand.documentNumber() + " ya está registrado");
 
-        // Solo se puede registrar con rol ADMIN en este microservicio
-        boolean hasNonAdminRole = signUpCommand.roles().stream()
-                .anyMatch(r -> r.getName() != Roles.ADMIN);
-        if (hasNonAdminRole)
-            throw new IllegalArgumentException("En este sistema solo se pueden registrar administradores");
-
         var roles = signUpCommand.roles().stream().map(
                 role -> roleRepository.findByName(role.getName())
                         .orElseThrow(() -> new IllegalArgumentException("Rol no encontrado: " + role.getName()))
